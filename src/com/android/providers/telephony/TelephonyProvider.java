@@ -451,7 +451,6 @@ public class TelephonyProvider extends ContentProvider
         }
         Log.d(TAG, "Preferred APN: " + id);
         return id;
-        return sp.getLong(COLUMN_APN_ID, -1);
     }
 
     private long getAPNConfigCheckSum() {
