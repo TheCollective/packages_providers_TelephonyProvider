@@ -33,10 +33,7 @@ import android.net.Uri;
 import android.os.Environment;
 import android.os.FileUtils;
 import android.provider.Telephony;
-<<<<<<< HEAD
 import android.text.TextUtils;
-=======
->>>>>>> d982632ddfdc206f98ee6198f7c994731e1a6b70
 import android.util.Log;
 import android.util.Xml;
 
@@ -153,7 +150,6 @@ public class TelephonyProvider extends ContentProvider
 
             initDatabase(db);
         }
-<<<<<<< HEAD
         
          private int getDefaultPreferredApnId(SQLiteDatabase db) {
             int id = -1;
@@ -172,8 +168,6 @@ public class TelephonyProvider extends ContentProvider
             }
             return id;
         }
-=======
->>>>>>> d982632ddfdc206f98ee6198f7c994731e1a6b70
 
         private void initDatabase(SQLiteDatabase db) {
             // Read internal APNS data
@@ -430,7 +424,6 @@ public class TelephonyProvider extends ContentProvider
 
     private long getPreferredApnId() {
         SharedPreferences sp = getContext().getSharedPreferences(PREF_FILE, Context.MODE_PRIVATE);
-<<<<<<< HEAD
         long id = sp.getLong(COLUMN_APN_ID, -1);
         if (id == -1) {
             id = getDefaultPreferredApnId();
@@ -458,9 +451,7 @@ public class TelephonyProvider extends ContentProvider
         }
         Log.d(TAG, "Preferred APN: " + id);
         return id;
-=======
         return sp.getLong(COLUMN_APN_ID, -1);
->>>>>>> d982632ddfdc206f98ee6198f7c994731e1a6b70
     }
 
     private long getAPNConfigCheckSum() {
@@ -783,9 +774,7 @@ public class TelephonyProvider extends ContentProvider
         db.delete(CARRIERS_TABLE, null, null);
         setPreferredApnId((long)-1);
         mOpenHelper.initDatabase(db);
-<<<<<<< HEAD
         setPreferredApnId(getDefaultPreferredApnId());
-=======
->>>>>>> d982632ddfdc206f98ee6198f7c994731e1a6b70
+
     }
 }
