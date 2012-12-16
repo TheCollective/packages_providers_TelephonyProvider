@@ -33,12 +33,14 @@ import android.net.Uri;
 import android.os.Environment;
 import android.os.FileUtils;
 import android.provider.Telephony;
+import android.telephony.TelephonyManager;
 import android.text.TextUtils;
 import android.util.Log;
 import android.util.Xml;
 
 import com.android.internal.telephony.BaseCommands;
 import com.android.internal.telephony.Phone;
+import com.android.internal.telephony.PhoneConstants;
 import com.android.internal.util.XmlUtils;
 
 import org.xmlpull.v1.XmlPullParser;
@@ -152,6 +154,24 @@ public class TelephonyProvider extends ContentProvider
         }
         
          private int getDefaultPreferredApnId(SQLiteDatabase db) {
+            int id = -1;
+            String configPref = mContext.getResources().getString(R.string.config_preferred_apn, "");
+            if (!TextUtils.isEmpty(configPref)) {
+                String[] s = configPref.split(",");
+                if (s.length == 3) {
+                    Cursor c = db.query("carriers", new String[] { "_id" },
+                            "apn='" + s[0] + "' AND mcc='" + s[1] + "' AND mnc='" + s[2] + "'",
+                            null, null, null, null);
+                    if (c.moveToFirst()) {
+                        id = c.getInt(0);
+                    }
+                    c.close();
+                }
+            }
+            return id;
+        }
+
+        private int getDefaultPreferredApnId(SQLiteDatabase db) {
             int id = -1;
             String configPref = mContext.getResources().getString(R.string.config_preferred_apn, "");
             if (!TextUtils.isEmpty(configPref)) {
@@ -412,7 +432,7 @@ public class TelephonyProvider extends ContentProvider
     }
 
     private boolean isLteOnCdma() {
-        return BaseCommands.getLteOnCdmaModeStatic() == Phone.LTE_ON_CDMA_TRUE;
+        return TelephonyManager.getLteOnCdmaModeStatic() == PhoneConstants.LTE_ON_CDMA_TRUE;
     }
 
     private void setPreferredApnId(Long id) {
@@ -468,6 +488,9 @@ public class TelephonyProvider extends ContentProvider
     @Override
     public Cursor query(Uri url, String[] projectionIn, String selection,
             String[] selectionArgs, String sort) {
+
+        checkPermission();
+
         SQLiteQueryBuilder qb = new SQLiteQueryBuilder();
         qb.setTables("carriers");
 
@@ -760,7 +783,6 @@ public class TelephonyProvider extends ContentProvider
     }
 
     private void checkPermission() {
-        // Check the permissions
         getContext().enforceCallingOrSelfPermission("android.permission.WRITE_APN_SETTINGS",
                 "No permission to write APN settings");
     }
@@ -774,6 +796,5 @@ public class TelephonyProvider extends ContentProvider
         setPreferredApnId((long)-1);
         mOpenHelper.initDatabase(db);
         setPreferredApnId(getDefaultPreferredApnId());
-
     }
 }
