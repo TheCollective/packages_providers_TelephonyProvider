@@ -152,24 +152,6 @@ public class TelephonyProvider extends ContentProvider
 
             initDatabase(db);
         }
-        
-         private int getDefaultPreferredApnId(SQLiteDatabase db) {
-            int id = -1;
-            String configPref = mContext.getResources().getString(R.string.config_preferred_apn, "");
-            if (!TextUtils.isEmpty(configPref)) {
-                String[] s = configPref.split(",");
-                if (s.length == 3) {
-                    Cursor c = db.query("carriers", new String[] { "_id" },
-                            "apn='" + s[0] + "' AND mcc='" + s[1] + "' AND mnc='" + s[2] + "'",
-                            null, null, null, null);
-                    if (c.moveToFirst()) {
-                        id = c.getInt(0);
-                    }
-                    c.close();
-                }
-            }
-            return id;
-        }
 
         private int getDefaultPreferredApnId(SQLiteDatabase db) {
             int id = -1;
