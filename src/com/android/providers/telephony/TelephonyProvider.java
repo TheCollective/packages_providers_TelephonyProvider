@@ -32,9 +32,7 @@ import android.database.sqlite.SQLiteOpenHelper;
 import android.database.sqlite.SQLiteQueryBuilder;
 import android.net.Uri;
 import android.os.Environment;
-import android.os.FileUtils;
 import android.provider.Telephony;
-import android.telephony.TelephonyManager;
 import android.text.TextUtils;
 import android.util.Log;
 import android.util.Xml;
@@ -58,7 +56,7 @@ public class TelephonyProvider extends ContentProvider
     private static final String DATABASE_NAME = "telephony.db";
     private static final boolean DBG = true;
 
-    private static final int DATABASE_VERSION = 8 << 16;
+    private static final int DATABASE_VERSION = 9 << 16;
     private static final int URL_TELEPHONY = 1;
     private static final int URL_CURRENT = 2;
     private static final int URL_ID = 3;
@@ -71,7 +69,6 @@ public class TelephonyProvider extends ContentProvider
 
     private static final String PREF_FILE = "preferred-apn";
     private static final String COLUMN_APN_ID = "apn_id";
-    private static final String APN_CONFIG_CHECKSUM = "apn_conf_checksum";
 
     private static final String PARTNER_APNS_PATH = "etc/apns-conf.xml";
 
@@ -263,6 +260,12 @@ public class TelephonyProvider extends ContentProvider
                         " ADD COLUMN mvno_match_data TEXT DEFAULT '';");
                 oldVersion = 8 << 16 | 6;
             }
+            if (oldVersion < (9 << 16 | 6)) {
+                // Add preferred field to the APN. The XML file does not change.
+                db.execSQL("ALTER TABLE " + CARRIERS_TABLE +
+                        " ADD COLUMN preferred BOOLEAN DEFAULT 0;");
+                oldVersion = 9 << 16 | 6;
+            }
         }
 
         /**
@@ -412,42 +415,8 @@ public class TelephonyProvider extends ContentProvider
 
     @Override
     public boolean onCreate() {
-        long oldCheckSum = getAPNConfigCheckSum();
-        File confFile = new File(Environment.getRootDirectory(), PARTNER_APNS_PATH);
-        long newCheckSum = -1L;
-
-        if (DBG) {
-            Log.w(TAG, "onCreate: confFile=" + confFile.getAbsolutePath() +
-                    " oldCheckSum=" + oldCheckSum);
-        }
         mOpenHelper = new DatabaseHelper(getContext());
-
-        if (isLteOnCdma()) {
-            // Check to see if apns-conf.xml file changed. If so, generate db again.
-            //
-            // TODO: Generalize so we can handle apns-conf.xml updates
-            // and preserve any modifications the user might make. For
-            // now its safe on LteOnCdma devices because the user cannot
-            // make changes.
-            try {
-                newCheckSum = FileUtils.checksumCrc32(confFile);
-                if (DBG) Log.w(TAG, "onCreate: newCheckSum=" + newCheckSum);
-                if (oldCheckSum != newCheckSum) {
-                    Log.w(TAG, "Rebuilding Telephony.db");
-                    restoreDefaultAPN();
-                    setAPNConfigCheckSum(newCheckSum);
-                }
-            } catch (FileNotFoundException e) {
-                Log.e(TAG, "FileNotFoundException: '" + confFile.getAbsolutePath() + "'", e);
-            } catch (IOException e) {
-                Log.e(TAG, "IOException: '" + confFile.getAbsolutePath() + "'", e);
-            }
-        }
         return true;
-    }
-
-    private boolean isLteOnCdma() {
-        return TelephonyManager.getLteOnCdmaModeStatic() == PhoneConstants.LTE_ON_CDMA_TRUE;
     }
 
     private void setPreferredApnId(Long id) {
@@ -486,18 +455,6 @@ public class TelephonyProvider extends ContentProvider
         }
         Log.d(TAG, "Preferred APN: " + id);
         return id;
-    }
-
-    private long getAPNConfigCheckSum() {
-        SharedPreferences sp = getContext().getSharedPreferences(PREF_FILE, Context.MODE_PRIVATE);
-        return sp.getLong(APN_CONFIG_CHECKSUM, -1);
-    }
-
-    private void setAPNConfigCheckSum(long id) {
-        SharedPreferences sp = getContext().getSharedPreferences(PREF_FILE, Context.MODE_PRIVATE);
-        SharedPreferences.Editor editor = sp.edit();
-        editor.putLong(APN_CONFIG_CHECKSUM, id);
-        editor.apply();
     }
 
     @Override
